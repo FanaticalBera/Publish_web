@@ -1,0 +1,8 @@
+heroSection:
+  headline: 동틀녘은 어둠을 깨고<br>빛이 드러나는 시간의 때입니다
+  subheadline: 아침을 여는 시작, 새로운 꿈을 꾸다
+  ctaButton: false
+globalAnnouncement:
+  enabled: true
+  message: 안녕하세요
+  link: https://github.com/FanaticalBera/FanaticalBera.github.io
