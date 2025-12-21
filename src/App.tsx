@@ -5,6 +5,7 @@ import * as HelmetAsync from 'react-helmet-async';
 // @ts-ignore
 const HelmetProvider = HelmetAsync.HelmetProvider || HelmetAsync.default?.HelmetProvider;
 import SEOHead from './components/common/SEOHead';
+import ScrollToTop from './components/common/ScrollToTop';
 import Admin from './pages/Admin';
 import Home from './pages/Home';
 import Books from './pages/Books';
@@ -23,6 +24,7 @@ import NotFound from './pages/NotFound';
 function App() {
   return (
     <HelmetProvider>
+      <ScrollToTop />
       <SEOHead title="Home" />
       <Routes>
         {/* Admin Route (No Layout) */}

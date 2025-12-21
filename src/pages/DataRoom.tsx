@@ -6,13 +6,13 @@ import { getAllDataRoom } from "@/utils/reader";
 import type { DataRoomItem } from "@/types/content";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 
 export default function DataRoom() {
     const preloaded = usePreloadedData() as { slug: string; entry: any }[] | null;
     const [items, setItems] = useState<{ slug: string; entry: any }[]>(
         preloaded ?? [],
     );
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         if (preloaded) return;
@@ -32,7 +32,6 @@ export default function DataRoom() {
                 slug: item.slug,
                 title: entry.title || item.slug,
                 description: "",
-                coverImage: entry.coverImage || "",
                 file: entry.file || "",
                 publishDate: entry.publishedAt || "",
             } as DataRoomItem;
@@ -57,53 +56,29 @@ export default function DataRoom() {
                     </p>
                 </header>
 
-                {/* Data Grid */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {dataItems.map((item) => (
-                        <div key={item.slug} className="group flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
-                            {/* Clickable Area for Detail Page */}
-                            <Link to={`/dataroom/${item.slug}`} className="flex-1 block">
-                                <div className="aspect-[16/9] relative overflow-hidden">
-                                    {item.coverImage ? (
-                                        <img
-                                            src={item.coverImage}
-                                            alt={item.title}
-                                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex flex-col items-center justify-center p-6 text-center">
-                                            <span className="font-heading text-lg font-semibold text-foreground/70">
-                                                {item.title}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
+                {/* Data List */}
+                <div className="flex flex-col border-t border-border">
+                    {dataItems.slice((currentPage - 1) * 10, currentPage * 10).map((item) => (
+                        <div
+                            key={item.slug}
+                            className="group flex flex-col md:flex-row md:items-center justify-between p-4 md:px-6 md:py-5 border-b border-border hover:bg-muted/30 transition-colors"
+                        >
+                            {/* Left: Title */}
+                            <div className="flex-1 min-w-0 pr-4">
+                                <Link
+                                    to={`/dataroom/${item.slug}`}
+                                    className="block font-medium text-foreground text-lg hover:text-primary transition-colors truncate"
+                                    title={item.title}
+                                >
+                                    {item.title}
+                                </Link>
+                            </div>
 
-                                <div className="p-6 flex flex-col gap-3">
-                                    <div className="text-sm text-primary font-medium">
-                                        {item.publishDate ? new Date(item.publishDate).toLocaleDateString() : ""}
-                                    </div>
-                                    <h3 className="font-heading text-xl font-semibold group-hover:text-primary transition-colors line-clamp-2">
-                                        {item.title}
-                                    </h3>
-                                </div>
-                            </Link>
-
-                            {/* Footer with Download */}
-                            <div className="px-6 pb-6 mt-auto">
-                                {item.file ? (
-                                    <a href={item.file} download target="_blank" rel="noopener noreferrer" className="w-full">
-                                        <Button variant="outline" className="w-full gap-2">
-                                            <Download className="w-4 h-4" />
-                                            다운로드
-                                        </Button>
-                                    </a>
-                                ) : (
-                                    <Button variant="outline" disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
-                                        <Download className="w-4 h-4" />
-                                        다운로드 불가
-                                    </Button>
-                                )}
+                            {/* Right: Date */}
+                            <div className="mt-2 md:mt-0 flex items-center justify-end md:min-w-[100px]">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                    {item.publishDate ? new Date(item.publishDate).toLocaleDateString() : ""}
+                                </span>
                             </div>
                         </div>
                     ))}
@@ -112,6 +87,51 @@ export default function DataRoom() {
                 {dataItems.length === 0 && (
                     <div className="py-20 text-center text-muted-foreground">
                         등록된 자료가 없습니다.
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {dataItems.length > 10 && (
+                    <div className="mt-12 flex justify-center items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => {
+                                setCurrentPage(p => Math.max(1, p - 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        >
+                            이전
+                        </Button>
+                        <div className="flex items-center gap-1 mx-2">
+                            {Array.from({ length: Math.ceil(dataItems.length / 10) }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => {
+                                        setCurrentPage(page);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-md text-sm transition-colors ${currentPage === page
+                                        ? "bg-primary text-primary-foreground font-medium"
+                                        : "hover:bg-muted text-foreground"
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === Math.ceil(dataItems.length / 10)}
+                            onClick={() => {
+                                setCurrentPage(p => Math.min(Math.ceil(dataItems.length / 10), p + 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        >
+                            다음
+                        </Button>
                     </div>
                 )}
             </div>

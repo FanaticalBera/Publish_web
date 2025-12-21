@@ -30,10 +30,10 @@ export function getFirstParagraphText(doc: unknown): string {
 }
 
 const storeLabels: Record<string, string> = {
-  kyobo: "Kyobo",
+  kyobo: "교보문고",
   yes24: "Yes24",
-  aladin: "Aladin",
-  ridi: "Ridi",
+  aladin: "알라딘",
+  ridi: "리디북스",
   other: "Other",
 };
 

@@ -25,7 +25,7 @@ export default config({
                     { label: 'Authors', itemLabel: props => props.value || 'Select Author' }
                 ),
                 translator: fields.text({ label: 'Translator' }),
-                originalTitle: fields.text({ label: 'Original Title' }),
+                originalTitle: fields.text({ label: '작가 이름' }),
                 format: fields.multiselect({
                     label: 'Format',
                     options: [
