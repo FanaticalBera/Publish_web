@@ -6,69 +6,69 @@ export default config({
     },
     collections: {
         books: collection({
-            label: 'Books',
+            label: '도서 DB',
             slugField: 'title',
             path: 'content/books/*',
             format: { contentField: 'description' },
             schema: {
-                title: fields.slug({ name: { label: 'Title' } }),
+                title: fields.slug({ name: { label: '도서명' } }),
                 coverImage: fields.image({
-                    label: 'Cover Image',
+                    label: '표지 이미지',
                     directory: 'public/images/books',
                     publicPath: '/images/books',
                 }),
                 authors: fields.array(
                     fields.relationship({
-                        label: 'Authors',
+                        label: '작가',
                         collection: 'authors',
                     }),
-                    { label: 'Authors', itemLabel: props => props.value || 'Select Author' }
+                    { label: '작가', itemLabel: props => props.value || '작가 선택' }
                 ),
-                translator: fields.text({ label: 'Translator' }),
-                originalTitle: fields.text({ label: '작가 이름' }),
+                translator: fields.text({ label: '번역가' }),
+                originalTitle: fields.text({ label: '원제' }),
                 format: fields.multiselect({
-                    label: 'Format',
+                    label: '판형',
                     options: [
-                        { label: 'Paperback (종이책)', value: 'paper' },
-                        { label: 'E-book (전자책)', value: 'ebook' },
+                        { label: '종이책', value: 'paper' },
+                        { label: '전자책', value: 'ebook' },
                     ],
                     defaultValue: ['paper'],
                 }),
                 categories: fields.array(
-                    fields.text({ label: 'Category' }),
-                    { label: 'Categories' }
+                    fields.text({ label: '카테고리' }),
+                    { label: '카테고리' }
                 ),
                 series: fields.object({
-                    name: fields.text({ label: 'Series Name' }),
-                    volume: fields.text({ label: 'Volume (e.g. 1, 2, or External)' }),
-                }, { label: 'Series Info' }),
-                publishDate: fields.date({ label: 'Publish Date' }),
+                    name: fields.text({ label: '시리즈명' }),
+                    volume: fields.text({ label: '권호 (예: 1, 2, 외전)' }),
+                }, { label: '시리즈 정보' }),
+                publishDate: fields.date({ label: '출간일' }),
                 isbn: fields.text({ label: 'ISBN' }),
-                previewLink: fields.url({ label: 'Preview Link (PDF/Viewer)' }),
+                previewLink: fields.url({ label: '미리보기 링크 (PDF/뷰어)' }),
                 buyLinks: fields.array(
                     fields.object({
                         storeName: fields.select({
-                            label: 'Store Name',
+                            label: '서점명',
                             options: [
-                                { label: 'Kyobo', value: 'kyobo' },
+                                { label: '교보문고', value: 'kyobo' },
                                 { label: 'Yes24', value: 'yes24' },
-                                { label: 'Aladin', value: 'aladin' },
-                                { label: 'Ridi', value: 'ridi' },
-                                { label: 'Other', value: 'other' },
+                                { label: '알라딘', value: 'aladin' },
+                                { label: '리디북스', value: 'ridi' },
+                                { label: '기타', value: 'other' },
                             ],
                             defaultValue: 'kyobo',
                         }),
-                        url: fields.url({ label: 'Link URL' }),
+                        url: fields.url({ label: '링크 URL' }),
                     }),
-                    { label: 'Purchase Links', itemLabel: props => `${props.fields.storeName.value}: ${props.fields.url.value}` }
+                    { label: '구매 링크', itemLabel: props => `${props.fields.storeName.value}: ${props.fields.url.value}` }
                 ),
                 summary: fields.text({
-                    label: 'Book Summary (Short)',
+                    label: '도서 요약 (목록용)',
                     multiline: true,
-                    description: 'Brief summary shown at the top of book detail page (2-3 sentences recommended)'
+                    description: '도서 목록이나 상단에 노출되는 짧은 요약입니다 (2-3문장 권장)'
                 }),
                 description: fields.document({
-                    label: 'Book Description (Full)',
+                    label: '도서 상세 소개',
                     formatting: true,
                     dividers: true,
                     links: true,
@@ -81,28 +81,28 @@ export default config({
         }),
 
         authors: collection({
-            label: 'Authors',
+            label: '작가 DB',
             slugField: 'name',
             path: 'content/authors/*',
             format: { contentField: 'bio' },
             schema: {
-                name: fields.slug({ name: { label: 'Name' } }),
+                name: fields.slug({ name: { label: '이름' } }),
                 photo: fields.image({
-                    label: 'Profile Photo',
+                    label: '프로필 사진',
                     directory: 'public/images/authors',
                     publicPath: '/images/authors',
                 }),
                 shortBio: fields.text({
-                    label: 'Short Bio',
+                    label: '약력 (요약)',
                     multiline: true,
-                    description: 'Brief bio shown at the top of author detail page (1-2 sentences recommended)'
+                    description: '작가 상세 페이지 상단에 노출되는 짧은 소개입니다'
                 }),
                 links: fields.array(
-                    fields.url({ label: 'Link URL' }),
-                    { label: 'Social/Web Links' }
+                    fields.url({ label: '링크 URL' }),
+                    { label: '웹/SNS 링크' }
                 ),
                 bio: fields.document({
-                    label: 'Biography',
+                    label: '작가 소개 (상세)',
                     formatting: true,
                     links: true,
                 }),
@@ -110,38 +110,38 @@ export default config({
         }),
 
         news: collection({
-            label: 'News & Posts',
+            label: '소식 & 포스트',
             slugField: 'title',
             path: 'content/news/*',
             format: { contentField: 'content' },
             schema: {
-                title: fields.slug({ name: { label: 'Title' } }),
+                title: fields.slug({ name: { label: '제목' } }),
                 type: fields.select({
-                    label: 'Type',
+                    label: '분류',
                     options: [
-                        { label: 'Notice (공지)', value: 'notice' },
-                        { label: 'New Release (신간)', value: 'release' },
-                        { label: 'Event (이벤트)', value: 'event' },
-                        { label: 'Column (칼럼)', value: 'column' },
+                        { label: '공지', value: 'notice' },
+                        { label: '신간', value: 'release' },
+                        { label: '이벤트', value: 'event' },
+                        { label: '칼럼', value: 'column' },
                     ],
                     defaultValue: 'notice',
                 }),
-                publishedAt: fields.date({ label: 'Published Date' }),
-                excerpt: fields.text({ label: 'Excerpt', multiline: true }),
+                publishedAt: fields.date({ label: '게시일' }),
+                excerpt: fields.text({ label: '요약문', multiline: true }),
                 coverImage: fields.image({
-                    label: 'Cover Image',
+                    label: '커버 이미지',
                     directory: 'public/images/news',
                     publicPath: '/images/news',
                 }),
                 relatedBooks: fields.array(
                     fields.relationship({
-                        label: 'Related Book',
+                        label: '관련 도서',
                         collection: 'books'
                     }),
-                    { label: 'Related Books' }
+                    { label: '관련 도서' }
                 ),
                 content: fields.document({
-                    label: 'Content',
+                    label: '본문',
                     formatting: true,
                     dividers: true,
                     links: true,
@@ -154,94 +154,94 @@ export default config({
         }),
 
         dataroom: collection({
-            label: 'Data Room',
+            label: '자료실',
             slugField: 'title',
             path: 'content/dataroom/*',
             format: { contentField: 'description' },
             schema: {
-                title: fields.slug({ name: { label: 'Title' } }),
+                title: fields.slug({ name: { label: '자료명' } }),
                 description: fields.document({
-                    label: 'Description',
+                    label: '설명',
                     formatting: true,
                     links: true,
                 }),
                 coverImage: fields.image({
-                    label: 'Cover Image',
+                    label: '커버 이미지',
                     directory: 'public/images/dataroom',
                     publicPath: '/images/dataroom',
                 }),
                 file: fields.file({
-                    label: 'File Attachment',
+                    label: '첨부 파일',
                     directory: 'public/files/dataroom',
                     publicPath: '/files/dataroom',
                 }),
-                publishedAt: fields.date({ label: 'Published Date' }),
+                publishedAt: fields.date({ label: '게시일' }),
             },
         }),
     },
 
     singletons: {
         settings: singleton({
-            label: 'Global Settings',
+            label: '전체 설정',
             path: 'content/settings',
             schema: {
-                siteName: fields.text({ label: 'Site Name' }),
+                siteName: fields.text({ label: '사이트 이름' }),
                 favicon: fields.image({
-                    label: 'Favicon',
+                    label: '파비콘',
                     directory: 'public',
                     publicPath: '/',
                 }),
                 defaultSeo: fields.object({
-                    title: fields.text({ label: 'Default Meta Title' }),
-                    description: fields.text({ label: 'Default Meta Description' }),
+                    title: fields.text({ label: '기본 메타 제목' }),
+                    description: fields.text({ label: '기본 메타 설명' }),
                     image: fields.image({
-                        label: 'Default OG Image',
+                        label: '기본 메타(OG) 이미지',
                         directory: 'public/images',
                         publicPath: '/images',
                     }),
-                }, { label: 'Default SEO' }),
-                analyticsId: fields.text({ label: 'GA4 Measurement ID' }),
+                }, { label: '기본 SEO 설정' }),
+                analyticsId: fields.text({ label: 'GA4 측정 ID' }),
             },
         }),
 
         homepage: singleton({
-            label: 'Homepage',
+            label: '메인 페이지',
             path: 'content/homepage',
             schema: {
                 heroSection: fields.object({
-                    headline: fields.text({ label: 'Headline' }),
-                    subheadline: fields.text({ label: 'Sub-headline' }),
-                    ctaButton: fields.checkbox({ label: 'Show CTA Button' }),
+                    headline: fields.text({ label: '헤드라인' }),
+                    subheadline: fields.text({ label: '서브 헤드라인' }),
+                    ctaButton: fields.checkbox({ label: 'CTA 버튼 표시' }),
                     image: fields.image({
-                        label: 'Hero Image',
+                        label: '히어로 이미지',
                         directory: 'public/images/hero',
                         publicPath: '/images/hero'
                     }),
-                }, { label: 'Hero Section' }),
+                }, { label: '히어로 섹션' }),
                 globalAnnouncement: fields.object({
-                    enabled: fields.checkbox({ label: 'Enable Announcement Bar' }),
-                    message: fields.text({ label: 'Message' }),
-                    link: fields.url({ label: 'Link URL' }),
-                }, { label: 'Global Announcement' }),
+                    enabled: fields.checkbox({ label: '공지 바 활성화' }),
+                    message: fields.text({ label: '메시지' }),
+                    link: fields.url({ label: '링크 URL' }),
+                }, { label: '전역 공지' }),
             },
         }),
 
         about: singleton({
-            label: 'About Page',
+            label: '소개 페이지',
             path: 'content/about',
             schema: {
                 mission: fields.document({
-                    label: 'Mission Statement (아침을 여는 시작)',
+                    label: '미션 (아침을 여는 시작)',
                     formatting: true,
                     links: true,
                 }),
                 history: fields.document({
-                    label: 'History (새로운 꿈을 꾸다)',
+                    label: '연혁 (새로운 꿈을 꾸다)',
                     formatting: true,
                     links: true,
                 }),
                 journey: fields.document({
-                    label: 'Journey (함께하는 여정)',
+                    label: '여정 (함께하는 여정)',
                     formatting: true,
                     links: true,
                 }),
@@ -249,27 +249,27 @@ export default config({
         }),
 
         contact: singleton({
-            label: 'Contact Page',
+            label: '문의 페이지',
             path: 'content/contact',
             schema: {
-                email: fields.text({ label: 'Contact Email' }),
-                phone: fields.text({ label: 'Contact Phone' }),
-                address: fields.text({ label: 'Contact Address', multiline: true }),
+                email: fields.text({ label: '이메일' }),
+                phone: fields.text({ label: '전화번호' }),
+                address: fields.text({ label: '주소', multiline: true }),
                 snsLinks: fields.array(
                     fields.object({
-                        platform: fields.text({ label: 'Platform (e.g. Instagram)' }),
+                        platform: fields.text({ label: '플랫폼 (예: Instagram)' }),
                         url: fields.url({ label: 'URL' }),
                     }),
-                    { label: 'SNS Links', itemLabel: props => props.fields.platform.value }
+                    { label: 'SNS 링크', itemLabel: props => props.fields.platform.value }
                 )
             }
         }),
 
         legal: singleton({
-            label: 'Legal Pages',
+            label: '약관 페이지',
             path: 'content/legal',
             schema: {
-                privacyPolicy: fields.document({ label: 'Privacy Policy', formatting: true })
+                privacyPolicy: fields.document({ label: '개인정보처리방침', formatting: true })
             }
         })
     },
