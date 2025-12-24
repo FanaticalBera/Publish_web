@@ -25,7 +25,7 @@ export default config({
                     { label: '작가', itemLabel: props => props.value || '작가 선택' }
                 ),
                 translator: fields.text({ label: '번역가' }),
-                originalTitle: fields.text({ label: '원제' }),
+                originalTitle: fields.text({ label: '책에 대한 한 문장 (적을 것이 없으면 작가 이름을 적어주세요)' }),
                 format: fields.multiselect({
                     label: '판형',
                     options: [
