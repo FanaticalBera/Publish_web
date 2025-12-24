@@ -1,19 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import SEOHead from "@/components/seo/SEOHead";
+import BookCard from "@/components/books/BookCard";
+import PurchaseModal from "@/components/books/PurchaseModal";
 import { CleanDocumentRenderer } from "@/components/content/CleanDocumentRenderer";
 import { usePreloadedData } from "@/context/PreloadContext";
 import { getNewsBySlug } from "@/utils/reader";
 import { formatDate } from "@/lib/utils";
-import { mapNewsTypeLabel } from "@/utils/content-adapters";
+import { mapNewsTypeLabel, getFirstParagraphText, mapPurchaseLinks } from "@/utils/content-adapters";
+import type { Book } from "@/types/content";
 
 export default function NewsDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const preloaded = usePreloadedData();
   const [article, setArticle] = useState<any>(preloaded || null);
   const [loading, setLoading] = useState(!preloaded);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   useEffect(() => {
     if (preloaded || !slug) return;
@@ -33,6 +37,22 @@ export default function NewsDetailPage() {
   const contentNode = article?.content ? (
     <CleanDocumentRenderer document={article.content} />
   ) : null;
+
+  const relatedBooks = useMemo(() => {
+    return (article?.resolvedRelatedBooks ?? []).map((book: any) => {
+      return {
+        slug: book.slug,
+        title: book.title || book.slug,
+        subtitle: book.originalTitle || "",
+        logline: getFirstParagraphText(book.description),
+        cover: book.coverImage || "",
+        description: getFirstParagraphText(book.description),
+        publishDate: book.publishDate || "",
+        purchaseLinks: mapPurchaseLinks(book.buyLinks),
+        authors: book.authors || [],
+      } as Book;
+    });
+  }, [article]);
 
   if (loading) {
     return (
@@ -111,6 +131,24 @@ export default function NewsDetailPage() {
           {contentNode}
         </div>
 
+        {/* Related Books */}
+        {relatedBooks.length > 0 && (
+          <div className="max-w-[720px] mx-auto mt-12 pt-8 border-t border-border">
+            <h2 className="font-heading text-xl font-semibold mb-6">
+              관련 도서
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              {relatedBooks.map((book: Book) => (
+                <BookCard
+                  key={book.slug}
+                  book={book}
+                  onPurchaseClick={() => setSelectedBook(book)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Back to List */}
         <div className="max-w-[720px] mx-auto mt-12 pt-8 border-t border-border">
           <Link
@@ -122,6 +160,16 @@ export default function NewsDetailPage() {
           </Link>
         </div>
       </article>
+
+      {/* Purchase Modal */}
+      {selectedBook && (
+        <PurchaseModal
+          isOpen={!!selectedBook}
+          onClose={() => setSelectedBook(null)}
+          bookTitle={selectedBook.title}
+          purchaseLinks={selectedBook.purchaseLinks}
+        />
+      )}
     </Layout>
   );
 }
