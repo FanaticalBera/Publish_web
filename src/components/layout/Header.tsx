@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileDrawer from "./MobileDrawer";
+import SearchModal from "@/components/search/SearchModal";
 
 const navItems = [
   { label: "도서", href: "/books" },
@@ -14,6 +15,7 @@ const navItems = [
 
 export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
     <>
@@ -40,31 +42,40 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Desktop Contact Link */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSearchOpen(true)}
+              aria-label="검색 열기"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+
             <Link
               to="/contact"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               문의
             </Link>
-          </div>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsDrawerOpen(true)}
-            aria-label="메뉴 열기"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsDrawerOpen(true)}
+              aria-label="메뉴 열기"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Mobile Drawer */}
       <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 }

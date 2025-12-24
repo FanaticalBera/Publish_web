@@ -178,7 +178,8 @@ function createDevReader() {
 
 // Helper to get reader instance safely
 async function getReader() {
-    if (typeof process !== 'undefined' && process.cwd) {
+    const isServer = typeof window === 'undefined';
+    if (isServer) {
         // Node / SSG Environment - Dynamic Import
         try {
             const { createReader } = await import('@keystatic/core/reader');
@@ -187,10 +188,9 @@ async function getReader() {
             console.warn("Failed to load Keystatic reader (Node):", e);
             return null;
         }
-    } else {
-        // Browser / Dev Environment
-        return createDevReader();
     }
+    // Browser / Dev Environment
+    return createDevReader();
 }
 
 export interface BookEntry {
