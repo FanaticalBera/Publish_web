@@ -13,6 +13,16 @@ export default function NewsPage() {
     preloaded ?? [],
   );
 
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  const categories = [
+    { value: "all", label: "전체" },
+    { value: "공지", label: "공지" },
+    { value: "신간", label: "신간" },
+    { value: "이벤트", label: "이벤트" },
+    { value: "칼럼", label: "칼럼" },
+  ];
+
   useEffect(() => {
     if (preloaded) return;
     getAllNews()
@@ -38,6 +48,11 @@ export default function NewsPage() {
     });
   }, [items]);
 
+  const filteredArticles = useMemo(() => {
+    if (selectedCategory === "all") return articles;
+    return articles.filter((article) => article.category === selectedCategory);
+  }, [articles, selectedCategory]);
+
   return (
     <Layout>
       <SEOHead
@@ -47,7 +62,7 @@ export default function NewsPage() {
 
       <div className="container py-8 md:py-16">
         {/* Header */}
-        <header className="mb-8 md:mb-12">
+        <header className="mb-8 md:mb-12 text-center md:text-left">
           <h1 className="font-heading text-3xl md:text-4xl font-semibold text-foreground">
             소식
           </h1>
@@ -56,12 +71,34 @@ export default function NewsPage() {
           </p>
         </header>
 
-        {/* News Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {articles.map((article) => (
-            <NewsCard key={article.slug} article={article} />
+        {/* Category Filter */}
+        <div className="flex flex-wrap gap-2 mb-8 md:mb-12">
+          {categories.map((category) => (
+            <button
+              key={category.value}
+              onClick={() => setSelectedCategory(category.value)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === category.value
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+            >
+              {category.label}
+            </button>
           ))}
         </div>
+
+        {/* News Grid */}
+        {articles.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredArticles.map((article) => (
+              <NewsCard key={article.slug} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-muted/30 rounded-xl">
+            <p className="text-muted-foreground">등록된 소식이 없습니다.</p>
+          </div>
+        )}
       </div>
     </Layout>
   );

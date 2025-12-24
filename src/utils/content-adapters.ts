@@ -52,13 +52,13 @@ export function mapPurchaseLinks(links: any[] | undefined): PurchaseLink[] {
 export function mapNewsTypeLabel(type: string | undefined): string | undefined {
   switch (type) {
     case "notice":
-      return "Notice";
+      return "공지";
     case "release":
-      return "New Release";
+      return "신간";
     case "event":
-      return "Event";
+      return "이벤트";
     case "column":
-      return "Column";
+      return "칼럼";
     default:
       return undefined;
   }
