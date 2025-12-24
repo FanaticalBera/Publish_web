@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import SEOHead from "@/components/seo/SEOHead";
 import NewsCard from "@/components/news/NewsCard";
+import { Button } from "@/components/ui/button";
 import { usePreloadedData } from "@/context/PreloadContext";
 import { getAllNews } from "@/utils/reader";
 import { mapNewsTypeLabel } from "@/utils/content-adapters";
@@ -14,6 +15,7 @@ export default function NewsPage() {
   );
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const categories = [
     { value: "all", label: "전체" },
@@ -53,6 +55,19 @@ export default function NewsPage() {
     return articles.filter((article) => article.category === selectedCategory);
   }, [articles, selectedCategory]);
 
+  const ITEMS_PER_PAGE = 12;
+  const paginatedArticles = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredArticles, currentPage]);
+
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
+
   return (
     <Layout>
       <SEOHead
@@ -76,7 +91,9 @@ export default function NewsPage() {
           {categories.map((category) => (
             <button
               key={category.value}
-              onClick={() => setSelectedCategory(category.value)}
+              onClick={() => {
+                setSelectedCategory(category.value);
+              }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === category.value
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -89,11 +106,58 @@ export default function NewsPage() {
 
         {/* News Grid */}
         {articles.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
-              <NewsCard key={article.slug} article={article} />
-            ))}
-          </div>
+          <>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedArticles.map((article) => (
+                <NewsCard key={article.slug} article={article} />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {filteredArticles.length > ITEMS_PER_PAGE && (
+              <div className="mt-12 flex justify-center items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => {
+                    setCurrentPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  이전
+                </Button>
+                <div className="flex items-center gap-1 mx-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`w-8 h-8 flex items-center justify-center rounded-md text-sm transition-colors ${currentPage === page
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "hover:bg-muted text-foreground"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => {
+                    setCurrentPage(p => Math.min(totalPages, p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  다음
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20 bg-muted/30 rounded-xl">
             <p className="text-muted-foreground">등록된 소식이 없습니다.</p>
