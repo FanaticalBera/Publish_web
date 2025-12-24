@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileDrawer from "./MobileDrawer";
-import SearchModal from "@/components/search/SearchModal";
+import SearchDropdown from "@/components/search/SearchDropdown";
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 
 const navItems = [
   { label: "도서", href: "/books" },
@@ -15,49 +16,155 @@ const navItems = [
 
 export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard shortcut: Ctrl+K / Cmd+K
+  useSearchShortcut(() => {
+    setIsSearchActive(true);
+  });
+
+  // Focus input when search becomes active
+  useEffect(() => {
+    if (isSearchActive) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchActive]);
+
+  // Close search on ESC key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isSearchActive) {
+        setIsSearchActive(false);
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSearchActive]);
+
+  // Close search when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isSearchActive &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setIsSearchActive(false);
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isSearchActive]);
+
+  const handleCloseSearch = () => {
+    setIsSearchActive(false);
+    setSearchQuery("");
+  };
 
   return (
     <>
       <header className="sticky top-0 z-30 h-14 md:h-16 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container h-full flex items-center justify-between">
+        <div className="container h-full flex items-center relative">
+          {/* Logo */}
           {/* Logo */}
           <Link
             to="/"
-            className="font-heading text-xl md:text-2xl font-semibold text-foreground hover:text-primary transition-colors"
+            className="font-heading text-xl md:text-2xl font-semibold text-foreground hover:text-primary transition-colors flex-shrink-0"
           >
             동틀녘
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          {/* Desktop Navigation - Absolutely centered */}
+          <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-8">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSearchOpen(true)}
-              aria-label="검색 열기"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-
+          {/* Right Section: Contact + Search + Mobile Menu */}
+          <div className="ml-auto flex items-center gap-4">
+            {/* Contact Link */}
             <Link
               to="/contact"
-              className="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
             >
               문의
             </Link>
+
+            {/* Search Area - Expands to the left */}
+            <div
+              ref={searchContainerRef}
+              className={`relative flex items-center justify-end transition-all duration-300 ease-in-out ${isSearchActive ? "w-full md:w-[320px]" : "w-10"
+                }`}
+            >
+              {isSearchActive ? (
+                <>
+                  <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-4 py-2 border border-border w-full animate-in fade-in zoom-in-95 duration-200">
+                    <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="검색어를 입력하세요..."
+                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground min-w-0"
+                      aria-label="검색어 입력"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 flex-shrink-0"
+                        onClick={() => setSearchQuery("")}
+                        aria-label="검색어 지우기"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 flex-shrink-0"
+                      onClick={handleCloseSearch}
+                      aria-label="검색 닫기"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Search Dropdown Results */}
+                  <SearchDropdown query={searchQuery} onClose={handleCloseSearch} />
+                </>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsSearchActive(true)}
+                  aria-label="검색 열기"
+                  className="relative"
+                  title="검색 (Ctrl+K)"
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
 
             {/* Mobile Menu Button */}
             <Button
@@ -75,7 +182,6 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 }
