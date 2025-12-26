@@ -50,3 +50,13 @@ export interface DataRoomItem {
   file?: string;
   publishDate: string;
 }
+
+export interface ReferenceNote {
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  thumbnail?: string;
+  publishDate: string;
+  category: string;
+}

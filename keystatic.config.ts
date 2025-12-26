@@ -178,6 +178,43 @@ export default config({
                 publishedAt: fields.date({ label: '게시일' }),
             },
         }),
+
+        referenceNotes: collection({
+            label: '참고 노트',
+            slugField: 'title',
+            path: 'content/reference-notes/*',
+            format: { contentField: 'content' },
+            schema: {
+                title: fields.slug({ name: { label: '제목' } }),
+                excerpt: fields.text({ label: '요약', multiline: true }),
+                coverImage: fields.image({
+                    label: '썸네일 이미지',
+                    directory: 'public/images/reference-notes',
+                    publicPath: '/images/reference-notes',
+                }),
+                content: fields.document({
+                    label: '내용',
+                    formatting: true,
+                    dividers: true,
+                    links: true,
+                    images: {
+                        directory: 'public/images/content',
+                        publicPath: '/images/content',
+                    },
+                }),
+                publishedAt: fields.date({ label: '발행일' }),
+                category: fields.select({
+                    label: '카테고리',
+                    options: [
+                        { label: '독서 가이드', value: 'guide' },
+                        { label: '연구 자료', value: 'research' },
+                        { label: '교육 자료', value: 'education' },
+                        { label: '기타', value: 'other' },
+                    ],
+                    defaultValue: 'guide'
+                }),
+            },
+        }),
     },
 
     singletons: {

@@ -18,6 +18,8 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import DataRoom from './pages/DataRoom';
 import DataRoomDetail from './pages/DataRoomDetail';
+import ReferenceNotes from './pages/ReferenceNotes';
+import ReferenceNoteDetail from './pages/ReferenceNoteDetail';
 import Privacy from './pages/Privacy';
 import NotFound from './pages/NotFound';
 
@@ -40,6 +42,8 @@ function App() {
         <Route path="/news/:slug" element={<NewsDetail />} />
         <Route path="/dataroom" element={<DataRoom />} />
         <Route path="/dataroom/:slug" element={<DataRoomDetail />} />
+        <Route path="/reference-notes" element={<ReferenceNotes />} />
+        <Route path="/reference-notes/:slug" element={<ReferenceNoteDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />

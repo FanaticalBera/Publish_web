@@ -3,7 +3,7 @@ heroSection:
   subheadline: 아침을 여는 시작, 새로운 꿈을 꾸다
   ctaButton: false
 globalAnnouncement:
-  enabled: true
+  enabled: false
   message: 앤트힐의 사촌들이 출간되었습니다
   link: >-
     http://localhost:5176/books/%EC%95%A4%ED%8A%B8%ED%9E%90%EC%9D%98%20%EC%82%AC%EC%B4%8C%EB%93%A4

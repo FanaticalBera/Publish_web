@@ -164,6 +164,10 @@ function createDevReader() {
             dataroom: {
                 all: async () => listCollection('/content/dataroom/', 'description'),
                 read: async (slug: string) => readItem(`/content/dataroom/${slug}.mdoc`, 'description')
+            },
+            referenceNotes: {
+                all: async () => listCollection('/content/reference-notes/', 'content'),
+                read: async (slug: string) => readItem(`/content/reference-notes/${slug}.mdoc`, 'content')
             }
         },
         singletons: {
@@ -330,6 +334,30 @@ export async function getDataRoomBySlug(slug: string) {
     const reader = await getReader();
     if (!reader) return null;
     return await reader.collections.dataroom.read(slug);
+}
+
+export async function getAllReferenceNotes() {
+    const reader = await getReader();
+    if (!reader) return [];
+    try {
+        const items = await reader.collections.referenceNotes.all();
+        return items
+            .filter((item: any) => item.entry && item.entry.publishedAt)
+            .sort((a: any, b: any) => {
+                const dateA = new Date(a.entry.publishedAt).getTime();
+                const dateB = new Date(b.entry.publishedAt).getTime();
+                return (isNaN(dateB) ? 0 : dateB) - (isNaN(dateA) ? 0 : dateA);
+            });
+    } catch (e) {
+        console.warn("Failed to fetch reference notes:", e);
+        return [];
+    }
+}
+
+export async function getReferenceNoteBySlug(slug: string) {
+    const reader = await getReader();
+    if (!reader) return null;
+    return await reader.collections.referenceNotes.read(slug);
 }
 
 export async function getSettings() {

@@ -4,12 +4,13 @@ import { formatDate } from "@/lib/utils";
 
 interface NewsCardProps {
   article: NewsArticle;
+  basePath?: string;
 }
 
-export default function NewsCard({ article }: NewsCardProps) {
+export default function NewsCard({ article, basePath = "/news" }: NewsCardProps) {
   return (
     <Link
-      to={`/news/${article.slug}`}
+      to={`${basePath}/${article.slug}`}
       className="block rounded-xl bg-card shadow-card overflow-hidden card-lift"
     >
       {/* Thumbnail */}

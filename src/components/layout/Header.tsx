@@ -10,7 +10,14 @@ const navItems = [
   { label: "도서", href: "/books" },
   { label: "저자", href: "/authors" },
   { label: "소식", href: "/news" },
-  { label: "자료실", href: "/dataroom" },
+  {
+    label: "자료",
+    href: "/dataroom", // Fallback or main link
+    children: [
+      { label: "자료실", href: "/dataroom" },
+      { label: "참고노트", href: "/reference-notes" },
+    ]
+  },
   { label: "소개", href: "/about" },
 ];
 
@@ -18,6 +25,7 @@ export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +85,6 @@ export default function Header() {
       <header className="sticky top-0 z-30 h-14 md:h-16 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container h-full flex items-center relative">
           {/* Logo */}
-          {/* Logo */}
           <Link
             to="/"
             className="font-heading text-xl md:text-2xl font-semibold text-foreground hover:text-primary transition-colors flex-shrink-0"
@@ -88,13 +95,46 @@ export default function Header() {
           {/* Desktop Navigation - Absolutely centered */}
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-8">
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-              >
-                {item.label}
-              </Link>
+              item.children ? (
+                <div
+                  key={item.label}
+                  className="relative group"
+                  onMouseEnter={() => setActiveDropdown(item.label)}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap cursor-pointer py-4"
+                  >
+                    {item.label}
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 transition-all duration-200 ${activeDropdown === item.label
+                      ? "opacity-100 translate-y-0 visible"
+                      : "opacity-0 translate-y-1 invisible"
+                    }`}>
+                    <div className="bg-popover border border-border rounded-lg shadow-lg p-2 min-w-[140px] flex flex-col gap-1">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.href}
+                          to={child.href}
+                          className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors text-center whitespace-nowrap"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
           </nav>
 
