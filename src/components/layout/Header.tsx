@@ -87,9 +87,13 @@ export default function Header() {
           {/* Logo */}
           <Link
             to="/"
-            className="font-heading text-xl md:text-2xl font-semibold text-foreground hover:text-primary transition-colors flex-shrink-0"
+            className="flex items-center hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            동틀녘
+            <img
+              src="/images/logo.png"
+              alt="동틀녘"
+              className="h-8 md:h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation - Absolutely centered */}
@@ -110,8 +114,8 @@ export default function Header() {
 
                   {/* Dropdown Menu */}
                   <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 transition-all duration-200 ${activeDropdown === item.label
-                      ? "opacity-100 translate-y-0 visible"
-                      : "opacity-0 translate-y-1 invisible"
+                    ? "opacity-100 translate-y-0 visible"
+                    : "opacity-0 translate-y-1 invisible"
                     }`}>
                     <div className="bg-popover border border-border rounded-lg shadow-lg p-2 min-w-[140px] flex flex-col gap-1">
                       {item.children.map((child) => (
