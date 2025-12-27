@@ -97,7 +97,11 @@
   body {
     @apply bg-background text-foreground font-body;
     font-feature-settings: "kern" 1;
-    overflow: auto;
+    overflow: auto !important;
+  }
+
+  body.scroll-lock {
+    overflow: hidden !important;
   }
 
   h1,

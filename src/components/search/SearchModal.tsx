@@ -79,10 +79,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     };
 
     document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("scroll-lock");
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
+      document.body.classList.remove("scroll-lock");
     };
   }, [isOpen, onClose]);
 

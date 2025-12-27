@@ -22,12 +22,12 @@ export default function PurchaseModal({
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.classList.add("scroll-lock");
     } else {
-      document.body.style.overflow = "";
+      document.body.classList.remove("scroll-lock");
     }
     return () => {
-      document.body.style.overflow = "";
+      document.body.classList.remove("scroll-lock");
     };
   }, [isOpen]);
 
