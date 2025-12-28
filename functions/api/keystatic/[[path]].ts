@@ -25,6 +25,41 @@ function ensureProcessEnv() {
   if (!globalAny.process.env.NODE_ENV) globalAny.process.env.NODE_ENV = 'production';
 }
 
+async function debugGitHubTokenExchange(args: {
+  code: string;
+  clientId: string;
+  clientSecret: string;
+}): Promise<string | undefined> {
+  try {
+    const url = new URL('https://github.com/login/oauth/access_token');
+    url.searchParams.set('client_id', args.clientId);
+    url.searchParams.set('client_secret', args.clientSecret);
+    url.searchParams.set('code', args.code);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+    });
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json().catch(() => null);
+      if (data && typeof data === 'object' && 'error' in data) {
+        const err = (data as any).error;
+        const desc = (data as any).error_description;
+        const uri = (data as any).error_uri;
+        return `GitHub token exchange error: ${String(err)}${desc ? ` (${String(desc)})` : ''}${uri ? `\n${String(uri)}` : ''}`;
+      }
+      return `GitHub token exchange returned HTTP ${res.status} but not an error JSON.`;
+    }
+
+    const text = await res.text().catch(() => '');
+    return `GitHub token exchange returned HTTP ${res.status} (${contentType || 'no content-type'}): ${text.slice(0, 200)}`;
+  } catch (error) {
+    return `GitHub token exchange debug failed: ${String(error)}`;
+  }
+}
+
 function maybeExpandAuthError(requestUrl: string, status: number | undefined, body: string | Uint8Array | null) {
   if (status !== 401) return body;
   if (typeof body !== 'string') return body;
@@ -41,6 +76,7 @@ function maybeExpandAuthError(requestUrl: string, status: number | undefined, bo
     '',
     'Most common causes:',
     `- GitHub OAuth App callback URL mismatch`,
+    '- GitHub OAuth App token expiration disabled (Keystatic expects `expires_in` + `refresh_token` in the access token response)',
     '- Wrong `KEYSTATIC_GITHUB_CLIENT_ID` / `KEYSTATIC_GITHUB_CLIENT_SECRET` values (must be from a GitHub *OAuth App*, not a GitHub App)',
     '- Cloudflare Pages env vars not set for this environment (Production vs Preview)',
     '',
@@ -65,77 +101,39 @@ export const onRequest = async (context: PagesContext<Env>): Promise<Response> =
   try {
     ensureProcessEnv();
 
-    let githubTokenExchangeDebug: string | undefined;
-    const originalFetch = globalThis.fetch.bind(globalThis);
-    let fetchPatched = false;
-    try {
-      try {
-        globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-          const urlStr =
-            typeof input === 'string'
-              ? input
-              : input instanceof URL
-                ? input.toString()
-                : input.url;
-          const res = await originalFetch(input, init);
+    const handler = makeGenericAPIRouteHandler({
+      config: keystaticConfig,
+      clientId: KEYSTATIC_GITHUB_CLIENT_ID,
+      clientSecret: KEYSTATIC_GITHUB_CLIENT_SECRET,
+      secret: KEYSTATIC_SECRET,
+    });
 
-          if (urlStr === 'https://github.com/login/oauth/access_token') {
-            try {
-              const clone = res.clone();
-              const contentType = clone.headers.get('content-type') || '';
-              if (contentType.includes('application/json')) {
-                const data = await clone.json();
-                if (data && typeof data === 'object' && 'error' in data) {
-                  const err = (data as any).error;
-                  const desc = (data as any).error_description;
-                  githubTokenExchangeDebug = `GitHub token exchange error: ${String(err)}${
-                    desc ? ` (${String(desc)})` : ''
-                  }`;
-                }
-              } else if (!res.ok) {
-                const text = await clone.text();
-                githubTokenExchangeDebug = `GitHub token exchange HTTP ${res.status}: ${text.slice(0, 200)}`;
-              }
-            } catch {
-              if (!res.ok) githubTokenExchangeDebug = `GitHub token exchange HTTP ${res.status}`;
-            }
-          }
+    const result = await handler(context.request);
+    let body: string | Uint8Array | null = maybeExpandAuthError(
+      context.request.url,
+      result.status,
+      result.body
+    );
 
-          return res;
-        };
-        fetchPatched = true;
-      } catch {
-        // Ignore if runtime disallows overriding fetch.
+    if (result.status === 401 && typeof body === 'string' && body.includes('Authorization failed')) {
+      const url = new URL(context.request.url);
+      if (url.pathname === '/api/keystatic/github/oauth/callback') {
+        const code = url.searchParams.get('code');
+        if (typeof code === 'string') {
+          const debug = await debugGitHubTokenExchange({
+            code,
+            clientId: KEYSTATIC_GITHUB_CLIENT_ID,
+            clientSecret: KEYSTATIC_GITHUB_CLIENT_SECRET,
+          });
+          if (debug) body = `${body}\n\n${debug}`;
+        }
       }
-
-      const handler = makeGenericAPIRouteHandler({
-        config: keystaticConfig,
-        clientId: KEYSTATIC_GITHUB_CLIENT_ID,
-        clientSecret: KEYSTATIC_GITHUB_CLIENT_SECRET,
-        secret: KEYSTATIC_SECRET,
-      });
-
-      const result = await handler(context.request);
-      let body: string | Uint8Array | null = maybeExpandAuthError(
-        context.request.url,
-        result.status,
-        result.body
-      );
-      if (
-        result.status === 401 &&
-        typeof body === 'string' &&
-        body.startsWith('Authorization failed') &&
-        githubTokenExchangeDebug
-      ) {
-        body = `${body}\n\n${githubTokenExchangeDebug}`;
-      }
-      return new Response(toResponseBody(body), {
-        status: result.status ?? 200,
-        headers: result.headers,
-      });
-    } finally {
-      if (fetchPatched) globalThis.fetch = originalFetch;
     }
+
+    return new Response(toResponseBody(body), {
+      status: result.status ?? 200,
+      headers: result.headers,
+    });
   } catch (error) {
     console.error('Keystatic API route error:', error);
     return new Response(`Keystatic API route error: ${String(error)}`, { status: 500 });
