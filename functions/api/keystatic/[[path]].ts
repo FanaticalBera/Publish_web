@@ -1,6 +1,5 @@
 import { makeGenericAPIRouteHandler } from '@keystatic/core/api/generic';
 import keystaticConfig from '../../../keystatic.config';
-import * as cookie from 'cookie';
 
 type Env = {
   KEYSTATIC_GITHUB_CLIENT_ID?: string;
@@ -24,6 +23,42 @@ function ensureProcessEnv() {
   if (!globalAny.process) globalAny.process = {};
   if (!globalAny.process.env) globalAny.process.env = {};
   if (!globalAny.process.env.NODE_ENV) globalAny.process.env.NODE_ENV = 'production';
+}
+
+function parseCookies(cookieHeader: string | null): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!cookieHeader) return out;
+  const parts = cookieHeader.split(';');
+  for (const part of parts) {
+    const eqIndex = part.indexOf('=');
+    if (eqIndex === -1) continue;
+    const name = part.slice(0, eqIndex).trim();
+    const value = part.slice(eqIndex + 1).trim();
+    if (!name) continue;
+    out[name] = decodeURIComponent(value);
+  }
+  return out;
+}
+
+type CookieOptions = {
+  path?: string;
+  secure?: boolean;
+  sameSite?: 'lax' | 'strict' | 'none';
+  httpOnly?: boolean;
+  maxAge?: number;
+  expires?: Date;
+};
+
+function serializeCookie(name: string, value: string, options: CookieOptions = {}): string {
+  const encoded = encodeURIComponent(value);
+  let str = `${name}=${encoded}`;
+  if (options.maxAge !== undefined) str += `; Max-Age=${Math.floor(options.maxAge)}`;
+  if (options.expires) str += `; Expires=${options.expires.toUTCString()}`;
+  if (options.path) str += `; Path=${options.path}`;
+  if (options.secure) str += '; Secure';
+  if (options.httpOnly) str += '; HttpOnly';
+  if (options.sameSite) str += `; SameSite=${options.sameSite[0].toUpperCase()}${options.sameSite.slice(1)}`;
+  return str;
 }
 
 const keystaticRouteRegex =
@@ -77,9 +112,10 @@ async function handleGitHubOauthCallback(args: {
   const state = searchParams.get('state');
   if (typeof code !== 'string') return new Response('Bad Request', { status: 400 });
 
-  const cookies = cookie.parse(args.request.headers.get('cookie') ?? '');
+  const cookies = parseCookies(args.request.headers.get('cookie'));
   const fromCookie = state ? cookies['ks-' + state] : undefined;
-  const from = typeof fromCookie === 'string' && keystaticRouteRegex.test(fromCookie) ? fromCookie : undefined;
+  const from =
+    typeof fromCookie === 'string' && keystaticRouteRegex.test(fromCookie) ? fromCookie : undefined;
 
   const tokenUrl = new URL('https://github.com/login/oauth/access_token');
   tokenUrl.searchParams.set('client_id', args.clientId);
@@ -116,16 +152,15 @@ async function handleGitHubOauthCallback(args: {
   // so we store the access token and treat refresh as a no-op in our route handler below.
   appendSetCookie(
     headers,
-    cookie.serialize('keystatic-gh-access-token', accessToken, {
+    serializeCookie('keystatic-gh-access-token', accessToken, {
       ...sameSiteLaxCookieBase(),
-      // keep it long-lived; if token is expiring, user can re-login
-      maxAge: 60 * 60 * 24 * 365,
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+      // Must not be HttpOnly: Keystatic reads this from `document.cookie`.
+      // Leave it as a session cookie to reduce persistence on shared machines.
     })
   );
   appendSetCookie(
     headers,
-    cookie.serialize('keystatic-gh-refresh-token', '', {
+    serializeCookie('keystatic-gh-refresh-token', '', {
       ...sameSiteLaxCookieBase(),
       httpOnly: true,
       maxAge: 0,
@@ -144,48 +179,53 @@ async function handleGitHubOauthCallback(args: {
   return redirect(`/keystatic${from ? `/${from}` : ''}`, headers);
 }
 
+function bytesToHex(bytes: Uint8Array) {
+  let str = '';
+  for (const byte of bytes) str += byte.toString(16).padStart(2, '0');
+  return str;
+}
+
+function handleGitHubLogin(args: { request: Request; clientId: string }): Response {
+  const reqUrl = new URL(args.request.url);
+  const rawFrom = reqUrl.searchParams.get('from');
+  const from = typeof rawFrom === 'string' && keystaticRouteRegex.test(rawFrom) ? rawFrom : '/';
+
+  const state = bytesToHex(crypto.getRandomValues(new Uint8Array(10)));
+
+  const url = new URL('https://github.com/login/oauth/authorize');
+  url.searchParams.set('client_id', args.clientId);
+  url.searchParams.set('redirect_uri', `${reqUrl.origin}/api/keystatic/github/oauth/callback`);
+
+  // Needed for `createCommitOnBranch` GraphQL mutation on public repos.
+  // If the repo is private, this needs `repo` instead.
+  url.searchParams.set('scope', 'public_repo');
+
+  if (from !== '/') {
+    url.searchParams.set('state', state);
+    const headers = new Headers();
+    appendSetCookie(
+      headers,
+      serializeCookie('ks-' + state, from, {
+        ...sameSiteLaxCookieBase(),
+        httpOnly: true,
+        // 1 day
+        maxAge: 60 * 60 * 24,
+        expires: new Date(Date.now() + 60 * 60 * 24 * 1000),
+      })
+    );
+    return redirect(url.toString(), headers);
+  }
+
+  return redirect(url.toString());
+}
+
 function handleGitHubRefreshToken(request: Request): Response {
-  const cookies = cookie.parse(request.headers.get('cookie') ?? '');
+  const cookies = parseCookies(request.headers.get('cookie'));
   const accessToken = cookies['keystatic-gh-access-token'];
   if (typeof accessToken !== 'string' || !accessToken) {
     return new Response('Authorization failed', { status: 401 });
   }
   return new Response('', { status: 200 });
-}
-
-async function debugGitHubTokenExchange(args: {
-  code: string;
-  clientId: string;
-  clientSecret: string;
-}): Promise<string | undefined> {
-  try {
-    const url = new URL('https://github.com/login/oauth/access_token');
-    url.searchParams.set('client_id', args.clientId);
-    url.searchParams.set('client_secret', args.clientSecret);
-    url.searchParams.set('code', args.code);
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-    });
-
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      const data = await res.json().catch(() => null);
-      if (data && typeof data === 'object' && 'error' in data) {
-        const err = (data as any).error;
-        const desc = (data as any).error_description;
-        const uri = (data as any).error_uri;
-        return `GitHub token exchange error: ${String(err)}${desc ? ` (${String(desc)})` : ''}${uri ? `\n${String(uri)}` : ''}`;
-      }
-      return `GitHub token exchange returned HTTP ${res.status} but not an error JSON.`;
-    }
-
-    const text = await res.text().catch(() => '');
-    return `GitHub token exchange returned HTTP ${res.status} (${contentType || 'no content-type'}): ${text.slice(0, 200)}`;
-  } catch (error) {
-    return `GitHub token exchange debug failed: ${String(error)}`;
-  }
 }
 
 function maybeExpandAuthError(requestUrl: string, status: number | undefined, body: string | Uint8Array | null) {
@@ -204,7 +244,7 @@ function maybeExpandAuthError(requestUrl: string, status: number | undefined, bo
     '',
     'Most common causes:',
     `- GitHub OAuth App callback URL mismatch`,
-    '- GitHub OAuth App token expiration disabled (Keystatic expects `expires_in` + `refresh_token` in the access token response)',
+    '- Missing GitHub OAuth scopes (for public repos Keystatic needs `public_repo`; for private it needs `repo`)',
     '- Wrong `KEYSTATIC_GITHUB_CLIENT_ID` / `KEYSTATIC_GITHUB_CLIENT_SECRET` values (must be from a GitHub *OAuth App*, not a GitHub App)',
     '- Cloudflare Pages env vars not set for this environment (Production vs Preview)',
     '',
@@ -230,6 +270,9 @@ export const onRequest = async (context: PagesContext<Env>): Promise<Response> =
     ensureProcessEnv();
 
     const pathname = getKeystaticPathname(context.request);
+    if (pathname === 'github/login') {
+      return handleGitHubLogin({ request: context.request, clientId: KEYSTATIC_GITHUB_CLIENT_ID });
+    }
     if (pathname === 'github/oauth/callback') {
       return handleGitHubOauthCallback({
         request: context.request,
@@ -254,21 +297,6 @@ export const onRequest = async (context: PagesContext<Env>): Promise<Response> =
       result.status,
       result.body
     );
-
-    if (result.status === 401 && typeof body === 'string' && body.includes('Authorization failed')) {
-      const url = new URL(context.request.url);
-      if (url.pathname === '/api/keystatic/github/oauth/callback') {
-        const code = url.searchParams.get('code');
-        if (typeof code === 'string') {
-          const debug = await debugGitHubTokenExchange({
-            code,
-            clientId: KEYSTATIC_GITHUB_CLIENT_ID,
-            clientSecret: KEYSTATIC_GITHUB_CLIENT_SECRET,
-          });
-          if (debug) body = `${body}\n\n${debug}`;
-        }
-      }
-    }
 
     return new Response(toResponseBody(body), {
       status: result.status ?? 200,
