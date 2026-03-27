@@ -36,6 +36,7 @@ export interface NewsArticle {
   title: string;
   excerpt: string;
   content: string;
+  youtubeUrl?: string;
   thumbnail?: string;
   publishDate: string;
   category?: string;
@@ -56,6 +57,7 @@ export interface ReferenceNote {
   title: string;
   excerpt: string;
   content: string;
+  youtubeUrl?: string;
   thumbnail?: string;
   publishDate: string;
   category: string;

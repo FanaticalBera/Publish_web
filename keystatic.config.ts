@@ -132,6 +132,7 @@ export default config({
                 }),
                 publishedAt: fields.date({ label: '게시일' }),
                 excerpt: fields.text({ label: '요약문', multiline: true }),
+                youtubeUrl: fields.url({ label: '유튜브 링크', validation: { isRequired: false } }),
                 coverImage: fields.image({
                     label: '커버 이미지',
                     directory: 'public/images/news',
@@ -191,6 +192,7 @@ export default config({
             schema: {
                 title: fields.slug({ name: { label: '제목' } }),
                 excerpt: fields.text({ label: '요약', multiline: true }),
+                youtubeUrl: fields.url({ label: '유튜브 링크', validation: { isRequired: false } }),
                 coverImage: fields.image({
                     label: '썸네일 이미지',
                     directory: 'public/images/reference-notes',

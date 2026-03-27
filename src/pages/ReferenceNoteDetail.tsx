@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import SEOHead from "@/components/seo/SEOHead";
 import { CleanDocumentRenderer } from "@/components/content/CleanDocumentRenderer";
+import { YouTubeEmbed } from "@/components/content/YouTubeEmbed";
 import { usePreloadedData } from "@/context/PreloadContext";
 import { getReferenceNoteBySlug } from "@/utils/reader";
 import { formatDate } from "@/lib/utils";
@@ -111,6 +112,10 @@ export default function ReferenceNoteDetail() {
                             />
                         </div>
                     </div>
+                )}
+
+                {note.youtubeUrl && (
+                    <YouTubeEmbed url={note.youtubeUrl} title={`${note.title} 영상`} />
                 )}
 
                 {/* Article Content - Magazine Style */}

@@ -6,6 +6,7 @@ import SEOHead from "@/components/seo/SEOHead";
 import BookCard from "@/components/books/BookCard";
 import PurchaseModal from "@/components/books/PurchaseModal";
 import { CleanDocumentRenderer } from "@/components/content/CleanDocumentRenderer";
+import { YouTubeEmbed } from "@/components/content/YouTubeEmbed";
 import { usePreloadedData } from "@/context/PreloadContext";
 import { getNewsBySlug } from "@/utils/reader";
 import { formatDate } from "@/lib/utils";
@@ -124,6 +125,10 @@ export default function NewsDetailPage() {
               />
             </div>
           </div>
+        )}
+
+        {article.youtubeUrl && (
+          <YouTubeEmbed url={article.youtubeUrl} title={`${article.title} 영상`} />
         )}
 
         {/* Article Content - Magazine Style */}
