@@ -5,6 +5,7 @@ type Env = {
   KEYSTATIC_GITHUB_CLIENT_ID?: string;
   KEYSTATIC_GITHUB_CLIENT_SECRET?: string;
   KEYSTATIC_SECRET?: string;
+  KEYSTATIC_GITHUB_OAUTH_SCOPE?: string;
 };
 
 type PagesContext<E> = {
@@ -185,7 +186,7 @@ function bytesToHex(bytes: Uint8Array) {
   return str;
 }
 
-function handleGitHubLogin(args: { request: Request; clientId: string }): Response {
+function handleGitHubLogin(args: { request: Request; clientId: string; scope: string }): Response {
   const reqUrl = new URL(args.request.url);
   const rawFrom = reqUrl.searchParams.get('from');
   const from = typeof rawFrom === 'string' && keystaticRouteRegex.test(rawFrom) ? rawFrom : '/';
@@ -196,9 +197,8 @@ function handleGitHubLogin(args: { request: Request; clientId: string }): Respon
   url.searchParams.set('client_id', args.clientId);
   url.searchParams.set('redirect_uri', `${reqUrl.origin}/api/keystatic/github/oauth/callback`);
 
-  // Needed for `createCommitOnBranch` GraphQL mutation on public repos.
-  // If the repo is private, this needs `repo` instead.
-  url.searchParams.set('scope', 'public_repo');
+  // Needed for `createCommitOnBranch` GraphQL mutation.
+  url.searchParams.set('scope', args.scope);
 
   if (from !== '/') {
     url.searchParams.set('state', state);
@@ -271,7 +271,11 @@ export const onRequest = async (context: PagesContext<Env>): Promise<Response> =
 
     const pathname = getKeystaticPathname(context.request);
     if (pathname === 'github/login') {
-      return handleGitHubLogin({ request: context.request, clientId: KEYSTATIC_GITHUB_CLIENT_ID });
+      return handleGitHubLogin({
+        request: context.request,
+        clientId: KEYSTATIC_GITHUB_CLIENT_ID,
+        scope: context.env.KEYSTATIC_GITHUB_OAUTH_SCOPE || 'public_repo',
+      });
     }
     if (pathname === 'github/oauth/callback') {
       return handleGitHubOauthCallback({
